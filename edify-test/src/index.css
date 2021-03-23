@@ -71,6 +71,7 @@ body {
   .tile-container {
 	border: solid 1px #DDDDDD;
 	background: #F6F6F6;
+	width: 30%;
   }
   .tile-container:nth-child(even) {
 	border: solid 1px #DDDDDD;
@@ -87,7 +88,7 @@ body {
   .tile {
 	  margin: 5px;
 	  padding: .25em;
-	  width: 35%;
+	  width: 95%;
   }
   .tile:hover {
 	  background-repeat: no-repeat;
@@ -158,7 +159,7 @@ body {
   .calendar {
 	display: inline;
     position: fixed;
-    top: 230px;
+    top: 330px;
     right: 10px;
   }
   .title {
@@ -183,6 +184,31 @@ body {
 	background: #F6F6F6;
 	margin-bottom: 5px;
 }
+.list-container:nth-child(even) a {
+	border: solid 1px #DDDDDD;
+	background: #d4d4d4;
+	margin-bottom: 5px;
+}
 .list-container {
 	margin: 5px;
+}
+.flex-box {
+	display: flex;
+	flex-wrap: wrap;
+	margin-right: 250px;
+}
+@keyframes rotation {
+	from {
+	  transform: rotate(0deg);
+	}
+	to {
+	  transform: rotate(359deg);
+	}
+  }
+.loading {
+	top: 150px;
+    position: absolute;
+    left: 250px;
+    right: 250px;
+	animation: rotation 2s infinite linear;
 }

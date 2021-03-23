@@ -5,6 +5,9 @@ import axios from 'axios';
 import reportWebVitals from './reportWebVitals';
 import $ from 'jquery'
 import DatePicker from 'react-datepicker';
+import ls from 'local-storage'
+import Modal from './component/Modal'
+import BikeWheel from './BikeWheel.svg';
 import 'react-datepicker/dist/react-datepicker.css';
 require('dotenv').config()
 const callRefreshURL = 'https://www.strava.com/oauth/token?client_id='+process.env.REACT_APP_client_id+'&client_secret='+process.env.REACT_APP_client_secret+'&refresh_token='+process.env.REACT_APP_refresh_token+'&grant_type=refresh_token'
@@ -12,6 +15,7 @@ const callRefreshURL = 'https://www.strava.com/oauth/token?client_id='+process.e
 class Container extends React.Component {
 	constructor(props) {
 		super(props)
+		this.removeFavorite = this.removeFavorite.bind(this)
 		this.reduceData = this.reduceData.bind(this)
 		this.state = {
 			listOrDetail: false,
@@ -31,13 +35,17 @@ class Container extends React.Component {
 			DatesSelected: false,
 			filteredList: [],
 			filteredDetail : [],
-			delay: 0
+			delay: 0,
+			favorited: [],
+			favoritedImageURL: [],
+			showModal: false
 		}
 	}
 	componentDidMount() {
 		axios.post(callRefreshURL).then(results => {
 			let access_token = results.data.access_token
 			this.setState({
+				favoritedImageURL: ls.get('favorited') || [],
 				access_token: access_token,
 			})
 			this.getActivites(null, 0)
@@ -46,6 +54,15 @@ class Container extends React.Component {
 	getActivites(filterNumber, delay) {
 		if (this.state.access_token) {
 			let num = filterNumber !== null ? filterNumber : '20'
+			if (filterNumber)
+				this.setState({
+					DatesSelected: false,
+					startDate: new Date(),
+					startDate: new Date()
+				})
+			
+			let originalFilteredList = this.state.filteredList
+			let originalFilteredDetail = this.state.filteredDetail
 			const URL = 'https://www.strava.com/api/v3/athlete/activities?per_page='+num+'&access_token='+this.state.access_token
 			if (this.state.activities.length > 0) {
 				this.setState({
@@ -53,18 +70,28 @@ class Container extends React.Component {
 					imageURL: [],
 				})
 			}
+			
+			if (delay > 0 && this.state.DatesSelected) {
+				this.setState({
+					filteredList: [],
+					filteredDetail: []
+				})
+			}
 			setTimeout(() => {
+				this.setState({
+					filteredList: originalFilteredList,
+					filteredDetail: originalFilteredDetail
+				})
 				axios.get(URL, {method: 'GET'}).then(results => {
 					this.setState({
 						activities: results.data
 					})
-					this.getMaps()
+					this.getMaps(filterNumber !== null)
 				})
 			}, delay);
-			
 		}
 	}
-	getMaps() {
+	getMaps(sideBarSelection) {
 		this.state.activities.forEach(element => {
 			console.log(element)
 			const map = 'https://maps.googleapis.com/maps/api/staticmap\?size=600x300&maptype=roadmap\&path=enc:'+element.map.summary_polyline+'\&key='+process.env.REACT_APP_MAPS_KEY
@@ -75,12 +102,17 @@ class Container extends React.Component {
 					time: element.start_date_local,
 					name: element.name
 				}
+				console.log(ls.get('favorited'))
+				if (ls.get('favorited')?.includes(element.id) && !sideBarSelection) {
+					this.setState({
+						favoritedImageURL: this.state.favoritedImageURL.concat(image)
+					})
+				}
 				this.setState({
 					imageURL: this.state.imageURL.concat(image),
 				})
 			})
 		})
-		
 	}
 	reduceData(results, toggle) {
 		let reducedHeartRate = []
@@ -94,47 +126,28 @@ class Container extends React.Component {
 		}
 		return toggle == 'hr' ? reducedHeartRate : metersToMiles
 	}
-	handleClick(id, element) {
-		const hrURL = 'https://www.strava.com/api/v3/activities/'+id+'/streams?keys=heartrate,time&key_by_type=true&access_token='+this.state.access_token
-		
-		//change border color
-		let red = document.querySelector('.red')
-		if (document.querySelectorAll('.selected').length > 1) {
-			if (element.target.classList.contains('selected')) {
-				this.removeChartDataFromState(element)
-				element.target.className = 'tile'
-				this.setActivityDescription(id)
-			}
-			return
-		}
-		if (!element.target.classList.contains('selected')) {
-			if (red) {
-				element.target.classList.add('selected', 'blue')
-				axios.get(hrURL).then((results) => {
-					let id = results.config.url.split('/')[6]
+	handleClick(id) {
+		let currentFavorited = this.state.favoritedImageURL.slice(0);
+		let newElement
+		if (!this.state.favoritedImageURL.find(element => element.id == id)) {
+			this.state.imageURL.forEach(element => {
+				if (element.id == id) {
+					newElement = element
 					this.setState({
-						dataID1: id,
-						heartrate1: this.reduceData(results, 'hr'),
-						distance1: this.reduceData(results, 'dist')
+						favoritedImageURL: this.state.favoritedImageURL.concat(element)
 					})
-				})
-			}
-			else {
-				element.target.classList.add('selected', 'red')
-				axios.get(hrURL).then((results) => {
-					let id = results.config.url.split('/')[6]
-					this.setState({
-						dataID2: id,
-						heartrate2: this.reduceData(results, 'hr'),
-						distance2: this.reduceData(results, 'dist')
-					})
-				})
-			}
-				
-		}
-		else {
-			this.removeChartDataFromState(element)
-			element.target.className = 'tile'
+				}
+			})
+			//  creating variable representing current saved article list plus newly article list:
+			let newFavorited = [...currentFavorited, newElement]
+
+			//  updating React state with variable:
+			this.setState({
+				favoritedImageURL: newFavorited,
+			});
+
+			//  updating localStorage state with same variable:
+			ls.set('favorited', newFavorited)
 		}
 		this.setActivityDescription(id)
 		
@@ -193,15 +206,40 @@ class Container extends React.Component {
 	alertMessage(){
 		console.log("Called from outside");
 	 }
-	 setDelay(event) {
+	setDelay(event) {
 		 this.setState({
 			 delay: event.target.value
 		 })
 	 }
-	 afterSubmission(event) {
+	afterSubmission(event) {
 		event.preventDefault()
 		this.getActivites('20', parseInt(this.state.delay))
 	 }
+	getClassName() {
+		return this.state.listOrDetail ? 'list-box' : 'flex-box'
+	}
+	showModal = e => {
+		this.setState({
+			showModal: !this.state.showModal
+		})
+	}
+	removeItem(arr, value) {
+		var index = arr.indexOf(value);
+		if (index > -1) {
+		  arr.splice(index, 1);
+		}
+		return arr;
+	  }
+	removeFavorite(id) {
+		let removeNode = this.state.favoritedImageURL.find(element => {
+			if (element.id == id)
+				return element
+		})
+		let tempArray = this.state.favoritedImageURL
+		tempArray = this.removeItem(tempArray, removeNode)
+		this.setState({favoritedImageURL: tempArray})
+		ls.set('favorited', tempArray)
+	}
 	render() {
 		let maps = this.state.imageURL.map((activity) => {
 			return (
@@ -288,27 +326,32 @@ class Container extends React.Component {
 				})
 			}
 		}
-		
+		const loadingAnimation = () => {
+			return (
+				<div className='loading' href="#"><img width="400" height="400" src={BikeWheel} /></div>
+			)
+		}
 		return (this.state.access_token ? <div className="container">
-			
+			{this.state.activities.length != 0 ? null : loadingAnimation()}
+			<Modal onClose={this.showModal} show={this.state.showModal} selections={this.state.favoritedImageURL} remove={this.removeFavorite}></Modal>
 			<div className="maps">
 				{this.state.DatesSelected ? 
-					<div>{this.state.listOrDetail ? this.state.filteredList : this.state.filteredDetail}</div> : 
-					<div>{this.state.listOrDetail ? list : maps}</div>}
+					<div className={this.getClassName()}>{this.state.listOrDetail ? this.state.filteredList : this.state.filteredDetail}</div> : 
+					<div className={this.getClassName()}>{this.state.listOrDetail ? list : maps}</div>}
 			</div>
 			<div className='filter'>
 				<ul id="myUL">
 					<li><a onClick={() => this.switchView()}>{this.state.listOrDetail ? 'Detail View' : 'List View'}</a></li>
-					<li><a onClick={() => this.getActivites('10')}>10 - Tiles</a></li>
+					<li><a onClick={() => this.getActivites('20')}>20 Activities</a></li>
 					<li><a onClick={() => this.getActivites('200')}>All Activities</a></li>
+					<li>{ls.get('favorited')?.length > 0 ? <a onClick={() => this.showModal()}>Favorites</a> : null}</li>
 					<li>
 						<form className='delay-form'>
 							<input className='delay-input' type="text" name='delay' placeholder='Delay in ms' onChange={(event) => this.setDelay(event)}></input>
 							<button className='delay-button' onClick={(event) => this.afterSubmission(event)}>Send Delay</button>
 						</form>
 					</li>
-				</ul>
-				
+				</ul>	
 			</div>
 			
 			<div className='calendar'>
