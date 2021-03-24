@@ -1,4 +1,4 @@
-import React from "react"
+import React, {useState, forwardRef, useRef, useImperativeHandle} from "react"
 import "./modal.css";
 
 export default class Modal extends React.Component {
@@ -33,6 +33,8 @@ export default class Modal extends React.Component {
 	}
 	handleClick(id) {
 		this.props.remove(id)
+		let k = this.props.selections
+		this.setState({listOrDetail: this.state.listOrDetail})
 	}
 	render() {
 		if (!this.props.show) {

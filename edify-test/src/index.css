@@ -212,3 +212,8 @@ body {
 .add-to-favorites {
 	margin-left: 5px;
 }
+.maps-conatainer {
+	display: flex;
+	flex-wrap: wrap;
+	margin-right: 200px;
+}

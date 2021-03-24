@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState, useEffect, forwardRef, useRef, useImperativeHandle} from 'react';
 import './index.css';
 import axios from 'axios';
 import $ from 'jquery'
@@ -7,14 +7,17 @@ import ls from 'local-storage'
 import Modal from './component/Modal'
 import BikeWheel from './BikeWheel.svg';
 import 'react-datepicker/dist/react-datepicker.css';
+import { setDate } from 'date-fns';
 require('dotenv').config()
 export const callRefreshURL = 'https://www.strava.com/oauth/token?client_id='+process.env.REACT_APP_client_id+'&client_secret='+process.env.REACT_APP_client_secret+'&refresh_token='+process.env.REACT_APP_refresh_token+'&grant_type=refresh_token'
 
-class Container extends React.Component {
-	constructor(props) {
+function Container(props) {
+	
+	/**
+	 constructor(props) {
 		super(props)
 		this.removeFavorite = this.removeFavorite.bind(this)
-		this.state = {
+		this.props = {
 			listOrDetail: false,
 			access_token: {},
 			activities: [],
@@ -30,61 +33,65 @@ class Container extends React.Component {
 			showModal: false
 		}
 	}
-	componentDidMount() {
+	 */
+	const [listOrDetail, setListOrDetail] = useState(false)
+	const [access_token, setAccessToken] = useState('')
+	const [activities, setActivities] = useState([])
+	const [imageURL, setImageURL] = useState([])
+	const [selected, setSelected] = useState(new Map())
+	const [startDate, setStartDate] = useState(new Date())
+	const [endDate, setEndDate] = useState(new Date())
+	const [DatesSelected, setDatesSelected] = useState(false)
+	const [filteredList, setFilteredList] = useState([])
+	const [filteredDetail, setFilteredDetail] = useState([])
+	const [delay, setDelayState] = useState(0)
+	const [favoritedImageURL, SetFavoritedImageURL] = useState([])
+	const [showModal, setShowModal] = useState(false)
+
+	useEffect(() => {
 		axios.post(callRefreshURL).then(results => {
-			let access_token = results.data.access_token
-			this.setState({
-				favoritedImageURL: ls.get('favorited') || [],
-				access_token: access_token,
-			})
-			this.getActivites(null, 0)
+			let token = results.data.access_token
+			SetFavoritedImageURL(ls.get('favorited') || [])
+			setAccessToken(token)
+			getActivites(null, 0, token)
 		})
-	}
-	testApiCall() {
+	}, [])
+
+	const testApiCall = () =>  {
 		return axios.post(callRefreshURL)
 	}
-	getActivites(filterNumber, delay) {
-		if (this.state.access_token) {
+	const getActivites = (filterNumber, delay, token) => {
+		if (token) {
 			let num = filterNumber !== null ? filterNumber : '20'
-			if (filterNumber)
-				this.setState({
-					DatesSelected: false,
-					startDate: new Date(),
-					endDate: new Date()
-				})
-			
-			let originalFilteredList = this.state.filteredList
-			let originalFilteredDetail = this.state.filteredDetail
-			const URL = 'https://www.strava.com/api/v3/athlete/activities?per_page='+num+'&access_token='+this.state.access_token
-			if (this.state.activities.length > 0) {
-				this.setState({
-					activities: [],
-					imageURL: [],
-				})
+			if (filterNumber) {
+				setDatesSelected(false)
+				setStartDate(new Date())
+				setEndDate(new Date())
+			}
+			let originalFilteredList = filteredList
+			let originalFilteredDetail = filteredDetail
+			const URL = 'https://www.strava.com/api/v3/athlete/activities?per_page='+num+'&access_token='+token
+			if (activities.length > 0) {
+				setActivities([])
+				setImageURL([])
 			}
 			
-			if (delay > 0 && this.state.DatesSelected) {
-				this.setState({
-					filteredList: [],
-					filteredDetail: []
-				})
+			if (delay > 0 && DatesSelected) {
+				setFilteredList([])
+				setFilteredDetail([])
 			}
 			setTimeout(() => {
-				this.setState({
-					filteredList: originalFilteredList,
-					filteredDetail: originalFilteredDetail
-				})
+				setFilteredList(originalFilteredList)
+				setFilteredDetail(originalFilteredDetail)
 				axios.get(URL, {method: 'GET'}).then(results => {
-					this.setState({
-						activities: results.data
-					})
-					this.getMaps(filterNumber !== null)
+					setActivities(results.data)
+					getMaps(filterNumber !== null, results.data)
 				})
 			}, delay);
 		}
 	}
-	getMaps(sideBarSelection) {
-		this.state.activities.forEach(element => {
+	const getMaps = (sideBarSelection, results) => {
+		results.forEach(element => {
 			const map = 'https://maps.googleapis.com/maps/api/staticmap\?size=600x300&maptype=roadmap\&path=enc:'+element.map.summary_polyline+'\&key='+process.env.REACT_APP_MAPS_KEY
 			axios.get(map).then(results => {
 				let image = {
@@ -94,36 +101,30 @@ class Container extends React.Component {
 					name: element.name
 				}
 				if (ls.get('favorited')?.includes(element.id) && !sideBarSelection) {
-					this.setState({
-						favoritedImageURL: this.state.favoritedImageURL.concat(image)
-					})
+					SetFavoritedImageURL(favoritedImageURL.concat(image))
+					
 				}
-				this.setState({
-					imageURL: this.state.imageURL.concat(image),
-				})
+				let current = imageURL.slice(0);
+				setImageURL(imageURL => [...imageURL, image]);
 			})
 		})
 	}
-	handleClick(id) {
-		let currentFavorited = this.state.favoritedImageURL.slice(0);
+	const handleClick = (id) => {
+		let currentFavorited = favoritedImageURL.slice(0);
 		let newElement
-		if (!this.state.favoritedImageURL.find(element => element.id === id)) {
-			this.state.imageURL.forEach(element => {
+		if (!favoritedImageURL.find(element => element.id === id)) {
+			imageURL.forEach(element => {
 				if (element.id === id) {
 					newElement = element
-					this.setState({
-						favoritedImageURL: this.state.favoritedImageURL.concat(element)
-					})
+					SetFavoritedImageURL(favoritedImageURL.concat(element))
 				}
 			})
 			let newFavorited = [...currentFavorited, newElement]
-			this.setState({
-				favoritedImageURL: newFavorited,
-			})
+			SetFavoritedImageURL(newFavorited)
 			ls.set('favorited', newFavorited)
 		}
 	}
-	tConvert(time) {
+	const tConvert = (time) => {
 		time = time.toString ().match (/^([01]\d|2[0-3])(:)([0-5]\d)(:[0-5]\d)?$/) || [time];
 	  
 		if (time.length > 1) {
@@ -133,54 +134,48 @@ class Container extends React.Component {
 		}
 		return time.join ('')
 	}
-	switchView() {
-		this.setState({
-			listOrDetail: this.state.listOrDetail ? false : true
-		})
+	const switchView = () => {
+		setListOrDetail(listOrDetail ? false : true)
 	}
-	setDelay(event) {
-		 this.setState({
-			 delay: event.target.value
-		 })
+	const setDelay = (event) => {
+		 setDelayState(event.target.value)
 	}
-	afterSubmission(event) {
+	const afterSubmission = (event) => {
 		event.preventDefault()
-		this.getActivites('20', parseInt(this.state.delay))
+		getActivites('20', parseInt(delay), access_token)
 	}
-	getClassName() {
-		return this.state.listOrDetail ? 'list-box' : 'flex-box'
+	const getClassName = () => {
+		return listOrDetail ? 'list-box' : 'flex-box'
 	}
-	showModal = e =>{
-		this.setState({
-			showModal: !this.state.showModal
-		})
+	const showModalState = (e) =>{
+		setShowModal(showModal ? false : true)
 	}
-	removeItem(arr, value) {
+	const removeItem = (arr, value) => {
 		var index = arr.indexOf(value);
 		if (index > -1) {
 		  arr.splice(index, 1);
 		}
 		return arr;
 	}
-	removeFavorite(id) {
-		let removeNode = this.state.favoritedImageURL.find(element => {
+	const removeFavorite = (id) => {
+		let removeNode = favoritedImageURL.find(element => {
 			if (element.id === parseInt(id))
 				return element
 		})
-		let tempArray = this.state.favoritedImageURL
-		tempArray = this.removeItem(tempArray, removeNode)
-		this.setState({favoritedImageURL: tempArray})
+		let tempArray = favoritedImageURL
+		tempArray = removeItem(tempArray, removeNode)
+		SetFavoritedImageURL(tempArray)
 		ls.set('favorited', tempArray)
 	}
-	render() {
-		let maps = this.state.imageURL.map((activity) => {
+	let maps = []
+	maps = imageURL.map((activity) => {
 			return (
 				<div className="tile-container" key={activity.id}>
 					<img 
 						className='tile'
 						alt=''
 						src={activity.url}
-						onClick={(element) => this.handleClick(activity.id, element)}
+						onClick={(element) => handleClick(activity.id, element)}
 						onMouseLeave={(element) => {
 							element.target.classList.add('tile-mouse-out')
 							let tiles = $('.tile')
@@ -197,7 +192,7 @@ class Container extends React.Component {
 				</div>
 			)
 		})
-		let list = this.state.activities.map((activity) => {
+		let list = activities.map((activity) => {
 			return (
 				<div className='list-container' key={activity.id}>
 					<div className='list-node'>
@@ -205,8 +200,8 @@ class Container extends React.Component {
 						+ parseInt(activity.distance*0.000621371) +'Miles | '
 						+ ' Avrg Heart Rate: ' + activity.average_heartrate
 						+ ' | ' + activity.start_date_local.split('T')[0]
-						+ ' | ' + this.tConvert(activity.start_date_local.split('T')[1].substr(0, activity.start_date_local.split('T')[1].length-1))}
-						{this.state.favoritedImageURL.find(element=>{return element.id===activity.id}) ? <div className='favorited-list-view'> Favorited </div> : <button className='add-to-favorites' onClick={() => this.handleClick(activity.id)}>Add to Favorites</button>}
+						+ ' | ' + tConvert(activity.start_date_local.split('T')[1].substr(0, activity.start_date_local.split('T')[1].length-1))}
+						{favoritedImageURL.find(element=>{return element.id===activity.id}) ? <div className='favorited-list-view'> Favorited </div> : <button className='add-to-favorites' onClick={() => handleClick(activity.id)}>Add to Favorites</button>}
 					</div>
 				</div>
 			)
@@ -214,26 +209,28 @@ class Container extends React.Component {
 		
 		const onChange = dates => {
 			const [start, end] = dates;
-			this.setState({
-				startDate: start,
-				endDate: end,
-				DatesSelected: start !== null && end !== null ? true : false
-			})
+			setStartDate(start)
+			setEndDate(end)
+			setDatesSelected(start !== null && end !== null ? true : false)
 			if (start !== null && end !== null) {
-				let list = this.state.activities.map((activity) => {
+				let list = activities.map((activity) => {
 					let date = new Date(activity.start_date_local.split('T')[0].replaceAll('/', '-'))
 					if (start.getTime() < date.getTime() && date.getTime() < end.getTime()) {
 						return (
 							<div className='list-container' key={activity.id}>
 								<div className='list-node'>
-									{activity.name + ' ' + activity.start_date_local.split('T')[0] + ' ' + this.tConvert(activity.start_date_local.split('T')[1].substr(0, activity.start_date_local.split('T')[1].length-1))}
+									{activity.name + ' | '
+									+ parseInt(activity.distance*0.000621371) +'Miles | '
+									+ ' Avrg Heart Rate: ' + activity.average_heartrate
+									+ ' | ' + activity.start_date_local.split('T')[0]
+									+ ' | ' + tConvert(activity.start_date_local.split('T')[1].substr(0, activity.start_date_local.split('T')[1].length-1))}
+									{favoritedImageURL.find(element=>{return element.id===activity.id}) ? <div className='favorited-list-view'> Favorited </div> : <button className='add-to-favorites' onClick={() => handleClick(activity.id)}>Add to Favorites</button>}
 								</div>
-								
 							</div>
 						)
 					}
 				})
-				let detail = this.state.imageURL.map((activity) => {
+				let detail = imageURL.map((activity) => {
 					let date = new Date(activity.time.split('T')[0].replaceAll('/', '-'))
 					if (start.getTime() < date.getTime() && date.getTime() < end.getTime()) {
 						return (
@@ -242,7 +239,7 @@ class Container extends React.Component {
 									className='tile'
 									alt=''
 									src={activity.url}
-									onClick={() => this.handleClick(activity.id)}
+									onClick={() => handleClick(activity.id)}
 									onMouseLeave={(element) => {
 										element.target.classList.add('tile-mouse-out')
 										let tiles = $('.tile')
@@ -260,10 +257,8 @@ class Container extends React.Component {
 						)
 					}
 				})
-				this.setState({
-					filteredList: list,
-					filteredDetail: detail
-				})
+				setFilteredList(list)
+				setFilteredDetail(detail)
 			}
 		}
 		const loadingAnimation = () => {
@@ -271,24 +266,24 @@ class Container extends React.Component {
 				<div className='loading' href="#"><img alt='' width="400" height="400" src={BikeWheel} /></div>
 			)
 		}
-		return (this.state.access_token ? <div className="container">
-			{this.state.activities.length !== 0 ? null : loadingAnimation()}
-			<Modal onClose={this.showModal} show={this.state.showModal} selections={this.state.favoritedImageURL} remove={this.removeFavorite}></Modal>
+		return (access_token ? <div className="container">
+			{activities.length !== 0 ? null : loadingAnimation()}
+			<Modal onClose={() => showModalState()} show={showModal} selections={favoritedImageURL} remove={(e) => removeFavorite(e)}></Modal>
 			<div className="maps">
-				{this.state.DatesSelected ? 
-					<div className={this.getClassName()}>{this.state.listOrDetail ? this.state.filteredList : this.state.filteredDetail}</div> : 
-					<div className={this.getClassName()}>{this.state.listOrDetail ? list : maps}</div>}
+				{DatesSelected ? 
+					<div className={getClassName()}>{listOrDetail ? filteredList : filteredDetail}</div> : 
+					<div className={getClassName()}>{listOrDetail ? list : maps}</div>}
 			</div>
 			<div className='filter'>
 				<ul id="myUL">
-					<li><a className='list-detail-toggle' onClick={() => this.switchView()}>{this.state.listOrDetail ? 'Detail View' : 'List View'}</a></li>
-					<li><a className='default-activity-number' onClick={() => this.getActivites('20')}>20 Activities</a></li>
-					<li><a className='all-activities' onClick={() => this.getActivites('200')}>All Activities</a></li>
-					<li>{ls.get('favorited')?.length > 0 ? <a onClick={() => this.showModal()}>Favorites</a> : null}</li>
+					<li><a className='list-detail-toggle' onClick={() => switchView()}>{listOrDetail ? 'Detail View' : 'List View'}</a></li>
+					<li><a className='default-activity-number' onClick={() => getActivites('20', 0, access_token)}>20 Activities</a></li>
+					<li><a className='all-activities' onClick={() => getActivites('200', 0, access_token)}>All Activities</a></li>
+					<li>{ls.get('favorited')?.length > 0 ? <a onClick={() => showModalState()}>Favorites</a> : null}</li>
 					<li>
 						<form className='delay-form'>
-							<input className='delay-input' type="text" name='delay' placeholder='Delay in ms' onChange={(event) => this.setDelay(event)}></input>
-							<button className='delay-button' onClick={(event) => this.afterSubmission(event)}>Send Delay</button>
+							<input className='delay-input' type="text" name='delay' placeholder='Delay in ms' onChange={(event) => setDelay(event)}></input>
+							<button className='delay-button' onClick={(event) => afterSubmission(event)}>Send Delay</button>
 						</form>
 					</li>
 				</ul>	
@@ -296,15 +291,15 @@ class Container extends React.Component {
 			
 			<div className='calendar'>
 				<DatePicker
-					selected={this.state.startDate}
+					selected={startDate}
 					onChange={onChange}
-					startDate={this.state.startDate}
-					endDate={this.state.endDate}
+					startDate={startDate}
+					endDate={endDate}
 					selectsRange
 					inline
 				/>
 			</div>
-		</div> : <h1>loading</h1>)
-	}
+		</div> : null)
+	
 }
 export default Container;
