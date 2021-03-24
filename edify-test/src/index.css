@@ -203,3 +203,12 @@ body {
     right: 250px;
 	animation: rotation 2s infinite linear;
 }
+.favorited-list-view {
+	display: inline;
+	background: greenyellow;
+	border-radius: 5px;
+	margin-left: 5px;
+}
+.add-to-favorites {
+	margin-left: 5px;
+}

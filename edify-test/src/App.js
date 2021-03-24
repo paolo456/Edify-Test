@@ -28,7 +28,6 @@ class Container extends React.Component {
 			filteredList: [],
 			filteredDetail : [],
 			delay: 0,
-			favorited: [],
 			favoritedImageURL: [],
 			showModal: false
 		}
@@ -204,11 +203,12 @@ class Container extends React.Component {
 			return (
 				<div className='list-container' key={activity.id}>
 					<div className='list-node'>
-						{activity.name + ' '
-						+ parseInt(activity.distance*0.000621371) +'Miles'
-						+ ' ' + activity.start_date_local.split('T')[0]
-						+ ' ' + this.tConvert(activity.start_date_local.split('T')[1].substr(0, activity.start_date_local.split('T')[1].length-1))}
-						<button onClick={() => this.handleClick(activity.id)}>Add to Favorites</button>
+						{activity.name + ' | '
+						+ parseInt(activity.distance*0.000621371) +'Miles | '
+						+ ' Avrg Heart Rate: ' + activity.average_heartrate
+						+ ' | ' + activity.start_date_local.split('T')[0]
+						+ ' | ' + this.tConvert(activity.start_date_local.split('T')[1].substr(0, activity.start_date_local.split('T')[1].length-1))}
+						{this.state.favoritedImageURL.find(element=>{return element.id===activity.id}) ? <div className='favorited-list-view'> Favorited </div> : <button className='add-to-favorites' onClick={() => this.handleClick(activity.id)}>Add to Favorites</button>}
 					</div>
 				</div>
 			)
