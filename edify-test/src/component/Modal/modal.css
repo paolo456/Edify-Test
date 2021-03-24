@@ -53,6 +53,11 @@
     width: 30%;
 	height: 55%;
 }
+.list-container-favorites .deselect-favorite {
+	float: right;
+	margin-left: 5px;
+	
+}
 .deselect-favorite {
 	float: right;
 }

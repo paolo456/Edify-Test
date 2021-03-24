@@ -1,6 +1,5 @@
 import React from "react"
 import "./modal.css";
-import ls from 'local-storage'
 
 export default class Modal extends React.Component {
 	constructor(props) {
@@ -23,15 +22,14 @@ export default class Modal extends React.Component {
 		})
 	}
 	tConvert(time) {
-		// Check correct time format and split into components
 		time = time.toString ().match (/^([01]\d|2[0-3])(:)([0-5]\d)(:[0-5]\d)?$/) || [time];
 	  
-		if (time.length > 1) { // If time format correct
-		  time = time.slice (1);  // Remove full string match value
-		  time[5] = +time[0] < 12 ? 'AM' : 'PM'; // Set AM/PM
-		  time[0] = +time[0] % 12 || 12; // Adjust hours
+		if (time.length > 1) {
+		  time = time.slice (1)
+		  time[5] = +time[0] < 12 ? 'AM' : 'PM'
+		  time[0] = +time[0] % 12 || 12
 		}
-		return time.join (''); // return adjusted time or original string
+		return time.join ('')
 	}
 	handleClick(id) {
 		this.props.remove(id)
@@ -46,6 +44,7 @@ export default class Modal extends React.Component {
 					<button className='deselect-favorite' onClick={() => this.handleClick(activity.id.toString())} id={activity.id.toString()}>X</button>
 					<img 
 						className='tile-favorites'
+						alt=''
 						src={activity.url}
 						>
 					</img>
@@ -57,10 +56,11 @@ export default class Modal extends React.Component {
 		})
 		let list = this.props.selections.map((activity) => {
 			return (
-				<div className='list-container' key={activity.id}>
+				<div className='list-container-favorites' key={activity.id}>
 					<a className='list-node'>
 						{activity.name + ' ' + activity.time.split('T')[0] + ' ' + this.tConvert(activity.time.split('T')[1].substr(0, activity.time.split('T')[1].length-1))}
 					</a>
+					<button className='deselect-favorite' onClick={() => this.handleClick(activity.id.toString())} id={activity.id.toString()}>X</button>
 				</div>
 			)
 		})
