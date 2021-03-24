@@ -1,32 +1,28 @@
-import {cleanup} from '@testing-library/react'
-import Container from './app'
+import Container, {callRefreshURL} from './App.js'
 import React from 'react'
 import Enzyme from 'enzyme'
 import Adapter from '@wojtekmaj/enzyme-adapter-react-17'
-import {callRefreshURL} from './App'
-
 
 Enzyme.configure({ adapter: new Adapter() });
 
-afterEach(cleanup)
+it('Open container and check sidebar and calendar', () => {
+	const wrapper = Enzyme.mount(<Container></Container>);
+	
+	const container = wrapper.find('.container')
+	expect(container).toBeTruthy()
 
-it('Open container and check sidebar', () => {
-	const wrapper = Enzyme.mount(<Container />);
-	const list1 = wrapper.find('.list-detail-toggle').text()
-	const list2 = wrapper.find('.default-activity-number').text()
-	const list3 = wrapper.find('.all-activities').text()
-	const list4 = wrapper.find('.delay-button').text()
-	expect(list1).toEqual('List View')
-	expect(list2).toEqual('20 Activities')
-	expect(list3).toEqual('All Activities')
-	expect(list4).toEqual('Send Delay')
-});
+	const listToggle = wrapper.find('.list-detail-toggle').text()
+	expect(listToggle).toEqual('List View')
 
-it('fetch call in app', () => {
-	const app = Enzyme.shallow(<Container />)
-	app.instance().testApiCall().then(() => {
-		expect(axios.post).toHaveBeenCalled()
-		expect(axios.post).toHaveBeenCalledWith(callRefreshURL)
-		done()
-	})
+	const defaultActivity = wrapper.find('.default-activity-number').text()
+	expect(defaultActivity).toEqual('20 Activities')
+
+	const allActivites = wrapper.find('.all-activities').text()
+	expect(allActivites).toEqual('All Activities')
+
+	const delayButton = wrapper.find('.delay-button').text()
+	expect(delayButton).toEqual('Send Delay')
+
+	const calendar = wrapper.find('.calendar').text()
+	expect(calendar).toBeTruthy()
 });
