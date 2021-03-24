@@ -1,8 +1,6 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
 import './index.css';
 import axios from 'axios';
-import reportWebVitals from './reportWebVitals';
 import $ from 'jquery'
 import DatePicker from 'react-datepicker';
 import ls from 'local-storage'
