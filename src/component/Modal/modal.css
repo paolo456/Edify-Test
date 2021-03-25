@@ -1,0 +1,63 @@
+
+.modal {
+	background: white;
+    display: inline-block;
+    border: 1px solid #ccc;
+    box-shadow: -2rem 2rem 2rem gray;
+    transform: scale(1);
+    opacity: 1;
+    width: 500px;
+    margin: auto;
+    right: 250px;
+    top: 50px;
+    position: fixed;
+	left: 250px;
+	z-index: 1;
+}
+.modal .actions {
+	border-top: 1px solid #ccc;
+    background: #eee;
+    padding: 0.5rem 1rem;
+}
+.modal .actions button {
+	border: 0;
+	background: #2E87D0;
+	border-radius: 5px;
+	padding: 0.5rem 1rem;
+	font-size: 0.8rem;
+	line-height: 1;
+}
+.modal .content {
+	padding: 1rem;
+    display: flex;
+	flex-wrap: wrap;
+	height: 300px;
+    overflow: scroll;
+}
+.modal h2 {
+	border-bottom: 1px solid #ccc;
+    padding: 1rem;
+    margin: 0;
+}
+#centered-toggle-button {
+  position: absolute;
+}
+.tile-favorites {
+	margin: 5px;
+    padding: .25em;
+    width: 95%;
+}
+.tile-container-favorites {
+	border: solid 1px #DDDDDD;
+    background: #F6F6F6;
+    width: 30%;
+	height: 55%;
+}
+.list-container-favorites .deselect-favorite {
+	float: right;
+	margin-left: 5px;
+	
+}
+.deselect-favorite {
+	float: right;
+}
