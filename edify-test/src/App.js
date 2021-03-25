@@ -10,8 +10,8 @@ import 'react-datepicker/dist/react-datepicker.css';
 require('dotenv').config()
 export const callRefreshURL = 'https://www.strava.com/oauth/token?client_id='+process.env.REACT_APP_client_id+'&client_secret='+process.env.REACT_APP_client_secret+'&refresh_token='+process.env.REACT_APP_refresh_token+'&grant_type=refresh_token'
 
-export function Container(props) {
-	const [listOrDetail, setListOrDetail] = useState(false)
+export function Container() {
+	const [listOrDetail, setListOrDetail] = useState(true)
 	const [access_token, setAccessToken] = useState('')
 	const [activities, setActivities] = useState([])
 	const [imageURL, setImageURL] = useState([])
@@ -23,6 +23,7 @@ export function Container(props) {
 	const [delay, setDelayState] = useState(0)
 	const [favoritedImageURL, SetFavoritedImageURL] = useState([])
 	const [showModal, setShowModal] = useState(false)
+	const [currentDisplayCount, setCurrentDisplayCount] = useState('200')
 
 	//ensures that the URL we are using is up to date
 	useEffect(() => {
@@ -37,12 +38,13 @@ export function Container(props) {
 	//also is used to set delay 
 	const getActivites = (filterNumber, delay, token) => {
 		if (token) {
-			let num = filterNumber !== null ? filterNumber : '20'
+			let num = filterNumber !== null ? filterNumber : '200'
 			if (filterNumber) {
 				setDatesSelected(false)
 				setStartDate(new Date())
 				setEndDate(new Date())
 			}
+			setCurrentDisplayCount(num)
 			let originalFilteredList = filteredList
 			let originalFilteredDetail = filteredDetail
 			const URL = 'https://www.strava.com/api/v3/athlete/activities?per_page='+num+'&access_token='+token
@@ -86,7 +88,7 @@ export function Container(props) {
 	}
 	//handles saving to favorites
 	const handleClick = (id, update, dates) => {
-		let currentFavorited 
+		let currentFavorited
 		if (update)
 			currentFavorited = ls.get('favorited').slice(0)
 		else {
@@ -127,7 +129,7 @@ export function Container(props) {
 	//sets delay
 	const afterSubmission = (event) => {
 		event.preventDefault()
-		getActivites('20', parseInt(delay), access_token)
+		getActivites(currentDisplayCount, parseInt(delay), access_token)
 	}
 	const getClassName = () => {
 		return listOrDetail ? 'list-box' : 'flex-box'
@@ -284,7 +286,7 @@ export function Container(props) {
 				<li>
 					<form className='delay-form'>
 						<input className='delay-input' type="text" name='delay' placeholder='Delay in ms' onChange={(event) => setDelay(event)}></input>
-						<button className='delay-button' onClick={(event) => afterSubmission(event)}>Send Delay</button>
+						<button className='delay-button' onClick={(event) => afterSubmission(event)}>Send Delay (ms)</button>
 					</form>
 				</li>
 			</ul>	
