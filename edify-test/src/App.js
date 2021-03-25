@@ -85,8 +85,13 @@ export function Container(props) {
 		})
 	}
 	//handles saving to favorites
-	const handleClick = (id) => {
-		let currentFavorited = favoritedImageURL.slice(0)
+	const handleClick = (id, update, dates) => {
+		let currentFavorited 
+		if (update)
+			currentFavorited = ls.get('favorited').slice(0)
+		else {
+			currentFavorited = favoritedImageURL.slice(0)
+		}
 		let newElement
 		if (!favoritedImageURL.find(element => element.id === id)) {
 			imageURL.forEach(element => {
@@ -98,7 +103,9 @@ export function Container(props) {
 			let newFavorited = [...currentFavorited, newElement]
 			SetFavoritedImageURL(newFavorited)
 			ls.set('favorited', newFavorited)
-			
+			if (update) {
+				onChange(['update', newFavorited, dates, id])
+			}
 		}
 	}
 	//converts 24hr time to 12 hr
@@ -154,7 +161,7 @@ export function Container(props) {
 						className='tile'
 						alt=''
 						src={activity.url}
-						onClick={() => handleClick(activity.id)}
+						onClick={() => handleClick(activity.id, false)}
 						onMouseLeave={(element) => {
 							element.target.classList.add('tile-mouse-out')
 							let tiles = $('.tile')
@@ -181,13 +188,22 @@ export function Container(props) {
 					+ ' Avrg Heart Rate: ' + activity.average_heartrate
 					+ ' | ' + activity.start_date_local.split('T')[0]
 					+ ' | ' + tConvert(activity.start_date_local.split('T')[1].substr(0, activity.start_date_local.split('T')[1].length-1))}
-					{favoritedImageURL.find(element=>{return element.id===activity.id}) ? <div className='favorited-list-view'> Favorited </div> : <button className='add-to-favorites' onClick={() => handleClick(activity.id)}>Add to Favorites</button>}
+					{favoritedImageURL.find(element=>{return element.id===activity.id}) ? <div className='favorited-list-view'> Favorited </div> : <button className='add-to-favorites' onClick={() => handleClick(activity.id, false)}>Add to Favorites</button>}
 				</div>
 			</div>
 		)
 	})
 	//handles calendar selections
 	const onChange = (dates) => {
+		//handle favorite selection in calendar search
+		if (dates[0] == 'update') {
+			SetFavoritedImageURL(dates[1])
+			if (dates[2].length == 2) {
+				dates = dates[2]
+			}
+			else
+				return
+		}
 		const [start, end] = dates;
 		setStartDate(start)
 		setEndDate(end)
@@ -204,6 +220,8 @@ export function Container(props) {
 								+ ' Avrg Heart Rate: ' + activity.average_heartrate
 								+ ' | ' + activity.start_date_local.split('T')[0]
 								+ ' | ' + tConvert(activity.start_date_local.split('T')[1].substr(0, activity.start_date_local.split('T')[1].length-1))}
+								{ls.get('favorited').find(element=>{return element.id===activity.id}) ? <div className='favorited-list-view'> Favorited </div> : <button className='add-to-favorites' onClick={() => handleClick(activity.id, true, dates)}>Add to Favorites</button>}
+								
 							</div>
 						</div>
 					)
@@ -215,12 +233,24 @@ export function Container(props) {
 					return (
 						<div className="tile-container" key={activity.id}>
 							<img 
-								className='tile-calendar'
+								className='tile'
 								alt=''
 								src={activity.url}
+								onClick={() => {
+									handleClick(activity.id, true, dates)
+								}}
+								onMouseLeave={(element) => {
+									element.target.classList.add('tile-mouse-out')
+									let tiles = $('.tile')
+									tiles.one('webkitAnimationEnd oanimationend msAnimationEnd animationend',
+										function() {
+											$(this).removeClass('tile-mouse-out')
+										}
+									)
+									}}
 								>
 							</img>
-							<div className='title-calendar'>
+							<div className='title'>
 								{activity.name}
 							</div>
 						</div>
@@ -266,6 +296,7 @@ export function Container(props) {
 				onChange={onChange}
 				startDate={startDate}
 				endDate={endDate}
+				favorites={favoritedImageURL}
 				selectsRange
 				inline
 			/>
