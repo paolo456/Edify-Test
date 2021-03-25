@@ -6,6 +6,10 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 ## Available Scripts
 
+Initially, to ensure that all packages are installed, it is advised that you run:
+
+### `npm install`
+
 In the project directory, you can run:
 
 ### `npm start`
