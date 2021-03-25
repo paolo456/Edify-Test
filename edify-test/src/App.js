@@ -1,4 +1,4 @@
-import React, {useState, useEffect, forwardRef, useRef, useImperativeHandle} from 'react';
+import React, {useState, useEffect} from 'react';
 import './index.css';
 import axios from 'axios';
 import $ from 'jquery'
@@ -7,7 +7,6 @@ import ls from 'local-storage'
 import Modal from './component/Modal'
 import BikeWheel from './BikeWheel.svg';
 import 'react-datepicker/dist/react-datepicker.css';
-import { setDate } from 'date-fns';
 require('dotenv').config()
 export const callRefreshURL = 'https://www.strava.com/oauth/token?client_id='+process.env.REACT_APP_client_id+'&client_secret='+process.env.REACT_APP_client_secret+'&refresh_token='+process.env.REACT_APP_refresh_token+'&grant_type=refresh_token'
 
